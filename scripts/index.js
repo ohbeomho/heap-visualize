@@ -1,6 +1,13 @@
-const nodesDiv = document.querySelector('.nodes')
+const nodesDiv = document.querySelector('#nodes')
 const keyInput = document.querySelector('input#key'),
     addKeyButton = document.querySelector('button#add')
+
+// 노드들을 연결하는 선을 그리기 위한 캔버스
+const lineCanvas = document.querySelector('#nodes canvas')
+const ctx = lineCanvas.getContext('2d')
+
+lineCanvas.width = window.innerWidth
+lineCanvas.height = window.innerHeight
 
 const nodes = [null]
 let last = 0
@@ -24,7 +31,7 @@ class HeapNodeElement {
     }
 }
 
-const MAX_NODES = 1024
+const MAX_NODES = 1024 // 2^10
 const BASE_Y = 50
 const FLOOR_HEIGHT = 100
 
@@ -43,9 +50,14 @@ function addKey() {
     const key = keyInput.valueAsNumber
     if (isNaN(key)) return
 
-    nodes[++last] = new HeapNodeElement(key)
+    nodes.push(new HeapNodeElement(key))
+    last++
     if (floors[last]) currFloor++
-    nodes[last].style.top = `${BASE_Y + (currFloor - 1) * FLOOR_HEIGHT}px`
+    nodes[last].element.style.top =
+        `${BASE_Y + (currFloor - 1) * FLOOR_HEIGHT}px`
+    // 중앙 정렬
+    nodes[last].element.style.left =
+        `calc(50% + ${((last + 1 / 2 - Math.pow(2, currFloor - 1) - Math.pow(2, currFloor - 2)) * Math.pow(2, 10 - currFloor)) / 5}rem - 1.5rem)`
 }
 
 addKeyButton.addEventListener('click', addKey)
