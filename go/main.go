@@ -1,9 +1,5 @@
 package main
 
-import (
-	"fmt"
-)
-
 type HeapNode struct {
 	key int32
 }
@@ -104,6 +100,12 @@ func (h *Heap) Pop() *HeapNode {
 
 var globalHeap *Heap
 
+// action = [type, key1, key2, ...]
+// type = 0 - swap, 1 - add, 2 - remove
+
+// [action, action, action, ...]
+var actionHistory [][]int32
+
 //go:wasmexport HeapInsert
 func HeapInsert(key int32) {
 	globalHeap.Insert(key)
@@ -126,5 +128,4 @@ func HeapEmpty() bool {
 
 func main() {
 	globalHeap = NewHeap()
-	fmt.Println("Hello, World!")
 }
