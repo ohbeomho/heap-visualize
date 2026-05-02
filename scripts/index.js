@@ -6,6 +6,9 @@ const keyInput = document.querySelector('input#key'),
 const lineCanvas = document.querySelector('#nodes canvas')
 const ctx = lineCanvas.getContext('2d')
 
+ctx.strokeStyle = 'black'
+ctx.lineWidth = 2
+
 lineCanvas.width = window.innerWidth
 lineCanvas.height = window.innerHeight
 
@@ -28,6 +31,12 @@ class HeapNodeElement {
 
         this.element.innerText = this.key
         target.innerText = target.key
+    }
+
+    get coords() {
+        const { left, top, width, height } =
+            this.element.getBoundingClientRect()
+        return { x: left + width / 2, y: top + height / 2 }
     }
 }
 
@@ -58,6 +67,23 @@ function addKey() {
     // 중앙 정렬
     nodes[last].element.style.left =
         `calc(50% + ${((last + 1 / 2 - Math.pow(2, currFloor - 1) - Math.pow(2, currFloor - 2)) * Math.pow(2, 10 - currFloor)) / 5}rem - 1.5rem)`
+
+    drawLines()
+}
+
+function drawLines() {
+    ctx.clearRect(0, 0, lineCanvas.width, lineCanvas.height)
+
+    // 왜 안그려짐??? 고쳐라 이거
+    for (let i = last; i > 1; i--) {
+        const { x, y } = nodes[i].coords,
+            { px, py } = nodes[Math.floor(i / 2)].coords
+
+        ctx.beginPath()
+        ctx.moveTo(x, y)
+        ctx.lineTo(px, py)
+        ctx.stroke()
+    }
 }
 
 addKeyButton.addEventListener('click', addKey)
