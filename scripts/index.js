@@ -74,10 +74,9 @@ function addKey() {
 function drawLines() {
     ctx.clearRect(0, 0, lineCanvas.width, lineCanvas.height)
 
-    // 왜 안그려짐??? 고쳐라 이거
     for (let i = last; i > 1; i--) {
         const { x, y } = nodes[i].coords,
-            { px, py } = nodes[Math.floor(i / 2)].coords
+            { x: px, y: py } = nodes[Math.floor(i / 2)].coords
 
         ctx.beginPath()
         ctx.moveTo(x, y)
@@ -87,3 +86,9 @@ function drawLines() {
 }
 
 addKeyButton.addEventListener('click', addKey)
+
+window.addEventListener('resize', () => {
+    lineCanvas.width = window.innerWidth
+    lineCanvas.height = window.innerHeight
+    drawLines()
+})
