@@ -1,13 +1,30 @@
-const nodesDiv = document.querySelector('#nodes')
-const keyInput = document.querySelector('input#key'),
-    addKeyButton = document.querySelector('button#add')
+// polyfill
+if (!WebAssembly.instantiateStreaming) {
+    WebAssembly.instantiateStreaming = async (resp, importObject) => {
+        const source = await (await resp).arrayBuffer()
+        return await WebAssembly.instantiate(source, importObject)
+    }
+}
+
+const go = new Go()
+let exports
+WebAssembly.instantiateStreaming(fetch("go/main.wasm"), go.importObject).then(
+    (result) => {
+        go.run(result.instance)
+        exports = result.instance.exports
+    },
+)
+
+const nodesDiv = document.querySelector("#nodes")
+const keyInput = document.querySelector("input#key"),
+    addKeyButton = document.querySelector("button#add")
 
 // 노드들을 연결하는 선을 그리기 위한 캔버스
-const lineCanvas = document.querySelector('#nodes canvas')
-const ctx = lineCanvas.getContext('2d')
+const lineCanvas = document.querySelector("#nodes canvas")
+const ctx = lineCanvas.getContext("2d")
 
-ctx.strokeStyle = 'black'
-ctx.lineWidth = 2
+ctx.strokeStyle = "black"
+ctx.lineWidth = 3
 
 lineCanvas.width = window.innerWidth
 lineCanvas.height = window.innerHeight
@@ -18,8 +35,8 @@ let last = 0
 class HeapNodeElement {
     constructor(key) {
         this.key = key
-        this.element = document.createElement('div')
-        this.element.classList.add('heap-node')
+        this.element = document.createElement("div")
+        this.element.classList.add("heap-node")
         this.element.innerText = key
         nodesDiv.appendChild(this.element)
     }
@@ -58,6 +75,9 @@ let currFloor = 0
 function addKey() {
     const key = keyInput.valueAsNumber
     if (isNaN(key)) return
+    keyInput.value = ""
+
+    exports.HeapInsert(key)
 
     nodes.push(new HeapNodeElement(key))
     last++
@@ -85,9 +105,14 @@ function drawLines() {
     }
 }
 
-addKeyButton.addEventListener('click', addKey)
+addKeyButton.addEventListener("click", addKey)
+keyInput.addEventListener("keydown", (e) => {
+    if (e.repeat || e.key != "Enter") return
 
-window.addEventListener('resize', () => {
+    addKey()
+})
+
+window.addEventListener("resize", () => {
     lineCanvas.width = window.innerWidth
     lineCanvas.height = window.innerHeight
     drawLines()
