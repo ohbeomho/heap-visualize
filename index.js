@@ -1,20 +1,3 @@
-// polyfill
-if (!WebAssembly.instantiateStreaming) {
-    WebAssembly.instantiateStreaming = async (resp, importObject) => {
-        const source = await (await resp).arrayBuffer()
-        return await WebAssembly.instantiate(source, importObject)
-    }
-}
-
-const go = new Go()
-let exports
-WebAssembly.instantiateStreaming(fetch("go/main.wasm"), go.importObject).then(
-    (result) => {
-        go.run(result.instance)
-        exports = result.instance.exports
-    },
-)
-
 const nodesDiv = document.querySelector("#nodes")
 const keyInput = document.querySelector("input#key"),
     addKeyButton = document.querySelector("button#add")
@@ -32,7 +15,10 @@ lineCanvas.height = window.innerHeight
 const nodes = [null]
 let last = 0
 
-class HeapNodeElement {
+// TODO: 힙 자료구조
+class Heap {}
+
+class HeapNode {
     constructor(key) {
         this.key = key
         this.element = document.createElement("div")
@@ -79,7 +65,7 @@ function addKey() {
 
     exports.HeapInsert(key)
 
-    nodes.push(new HeapNodeElement(key))
+    nodes.push(new HeapNode(key))
     last++
     if (floors[last]) currFloor++
     nodes[last].element.style.top =
