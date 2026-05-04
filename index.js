@@ -28,15 +28,6 @@ class HeapNode {
         nodesDiv.appendChild(this.element)
     }
 
-    static swap(target) {
-        let temp = this.key
-        this.key = target.key
-        target.key = temp
-
-        this.element.innerText = this.key
-        target.innerText = target.key
-    }
-
     get coords() {
         const { left, top, width, height } =
             this.element.getBoundingClientRect()
@@ -83,7 +74,7 @@ class Heap {
             curr = parent()
         }
 
-        console.log(this.nodes)
+        this.updateCoords()
 
         return swaps
     }
@@ -115,7 +106,24 @@ class Heap {
             } else break
         }
 
+        this.updateCoords()
+
         return swaps
+    }
+
+    updateCoords() {
+        let floor = 0
+
+        for (let i = 1; i <= last; i++) {
+            if (Math.pow(2, floor) < i + 1) floor++
+
+            this.nodes[i].element.style.top =
+                `${BASE_Y + (floor - 1) * FLOOR_HEIGHT}px`
+            this.nodes[i].element.style.left =
+                `calc(50% + ${((i + 1 / 2 - Math.pow(2, floor - 1) - Math.pow(2, floor - 2)) * Math.pow(2, 10 - floor)) / 5}rem - 1.5rem)`
+        }
+
+        drawLines()
     }
 
     get empty() {
@@ -128,17 +136,6 @@ class Heap {
     }
 }
 
-// 2의 제곱번째 노드가 추가될 때마다 층이 추가됨
-const floors = {
-    1: true,
-}
-let curr = 2
-while (curr <= MAX_NODES) {
-    floors[curr] = true
-    curr = curr * 2
-}
-
-let currFloor = 0
 function addKey() {
     const key = keyInput.valueAsNumber
     if (isNaN(key)) return
@@ -146,14 +143,6 @@ function addKey() {
 
     heap.nodes.push(new HeapNode(key))
     last++
-    if (floors[last]) currFloor++
-    heap.nodes[last].element.style.top =
-        `${BASE_Y + (currFloor - 1) * FLOOR_HEIGHT}px`
-    // 중앙 정렬
-    heap.nodes[last].element.style.left =
-        `calc(50% + ${((last + 1 / 2 - Math.pow(2, currFloor - 1) - Math.pow(2, currFloor - 2)) * Math.pow(2, 10 - currFloor)) / 5}rem - 1.5rem)`
-
-    drawLines()
 }
 
 function popKey() {
@@ -161,8 +150,6 @@ function popKey() {
     heap.nodes[1] = heap.nodes[last]
     heap.nodes.pop()
     last--
-
-    drawLines()
 }
 
 function drawLines() {
