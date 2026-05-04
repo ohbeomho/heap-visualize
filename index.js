@@ -2,6 +2,7 @@ const nodesDiv = document.querySelector("#nodes")
 const keyInput = document.querySelector("input#key"),
     addButton = document.querySelector("button#add"),
     popButton = document.querySelector("button#pop")
+const sizeNode = document.querySelector("#size")
 
 // 노드들을 연결하는 선을 그리기 위한 캔버스
 const lineCanvas = document.querySelector("#nodes canvas")
@@ -28,10 +29,33 @@ class HeapNode {
         nodesDiv.appendChild(this.element)
     }
 
+    static get size() {
+        return sizeNode.getBoundingClientRect().width
+    }
+
+    static animateSwap(n1, n2) {
+        const { x: x1, y: y1 } = n1.coords,
+            { x: x2, y: y2 } = n2.coords
+
+        n1.element.animate(
+            [
+                { left: `${x1}px`, top: `${y1}px` },
+                { left: `${x2}px`, top: `${y2}px` },
+            ],
+            { duration: 390, fill: "forwards" },
+        )
+        n2.element.animate(
+            [
+                { left: `${x2}px`, top: `${y2}px` },
+                { left: `${x1}px`, top: `${y1}px` },
+            ],
+            { duration: 390, fill: "forwards" },
+        )
+    }
+
     get coords() {
-        const { left, top, width, height } =
-            this.element.getBoundingClientRect()
-        return { x: left + width / 2, y: top + height / 2 }
+        const { x, y } = this.element.getBoundingClientRect()
+        return { x, y }
     }
 }
 
@@ -61,31 +85,35 @@ class Heap {
 
         addKey(key)
 
-        /**
-         * @type {number[][]}
-         */
-        const swaps = []
+        let swapCount = 0
+
+        disableControls()
 
         let curr = last
         const parent = () => Math.floor(curr / 2)
         while (curr > 1 && key > this.nodes[parent()].key) {
-            this.swap(curr, parent())
-            swaps.push([curr, parent()])
+            if (parent() >= 1) {
+                const p = parent(),
+                    c = curr
+
+                setTimeout(() => {
+                    HeapNode.animateSwap(this.nodes[c], this.nodes[p])
+                    this.swap(c, p)
+                }, ++swapCount * 400)
+            }
+
             curr = parent()
         }
 
-        this.updateCoords()
-
-        return swaps
+        setTimeout(enableControls, swapCount * 400 + 390)
     }
 
     pop() {
         popKey()
 
-        /**
-         * @type {number[][]}
-         */
-        const swaps = []
+        let swapCount = 0
+
+        disableControls()
 
         let curr = 1
         while (true) {
@@ -99,16 +127,19 @@ class Heap {
                 maxChild = right
 
             if (this.nodes[maxChild].key > this.nodes[curr].key) {
-                this.swap(maxChild, curr)
-                curr = maxChild
+                const m = maxChild,
+                    c = curr
 
-                swaps.push([maxChild, curr])
+                setTimeout(() => {
+                    HeapNode.animateSwap(this.nodes[c], this.nodes[m])
+                    this.swap(c, m)
+                }, ++swapCount * 400)
+
+                curr = maxChild
             } else break
         }
 
-        this.updateCoords()
-
-        return swaps
+        setTimeout(enableControls, swapCount * 400 + 390)
     }
 
     updateCoords() {
@@ -143,6 +174,8 @@ function addKey() {
 
     heap.nodes.push(new HeapNode(key))
     last++
+
+    heap.updateCoords()
 }
 
 function popKey() {
@@ -150,6 +183,10 @@ function popKey() {
     heap.nodes[1] = heap.nodes[last]
     heap.nodes.pop()
     last--
+
+    console.log(heap.nodes.slice(1).map((n) => n.key))
+
+    heap.updateCoords()
 }
 
 function drawLines() {
@@ -160,10 +197,18 @@ function drawLines() {
             { x: px, y: py } = heap.nodes[Math.floor(i / 2)].coords
 
         ctx.beginPath()
-        ctx.moveTo(x, y)
-        ctx.lineTo(px, py)
+        ctx.moveTo(x + HeapNode.size / 2, y + HeapNode.size / 2)
+        ctx.lineTo(px + HeapNode.size / 2, py + HeapNode.size / 2)
         ctx.stroke()
     }
+}
+
+function disableControls() {
+    for (let i of [keyInput, addButton, popButton]) i.disabled = true
+}
+
+function enableControls() {
+    for (let i of [keyInput, addButton, popButton]) i.disabled = false
 }
 
 const heap = new Heap()
@@ -172,10 +217,10 @@ addButton.addEventListener("click", () => heap.insert(keyInput.valueAsNumber))
 keyInput.addEventListener("keydown", (e) => {
     if (e.repeat || e.key != "Enter") return
 
-    console.log(heap.insert(keyInput.valueAsNumber))
+    heap.insert(keyInput.valueAsNumber)
 })
 
-popButton.addEventListener("click", () => console.log(heap.pop()))
+popButton.addEventListener("click", () => heap.pop())
 
 window.addEventListener("resize", () => {
     lineCanvas.width = window.innerWidth
