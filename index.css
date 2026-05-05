@@ -4,6 +4,15 @@ body {
     overflow: hidden;
 }
 
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
 .heap-node {
     position: absolute;
     width: 3rem;
@@ -15,6 +24,8 @@ body {
     /* 그림자로 테두리를 표현하여 실제 크기가 바뀌지 않게 함 */
     box-shadow: 0 0 0 1px rgb(0, 0, 0);
     background-color: white;
+    opacity: 0;
+    animation: fadeIn 500ms forwards;
 }
 
 #nodes {
