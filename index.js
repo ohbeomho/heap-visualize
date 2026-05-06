@@ -1,8 +1,11 @@
 const nodesDiv = document.querySelector("#nodes")
 const keyInput = document.querySelector("input#key"),
+    speedSlider = document.querySelector("input#speed"),
     addButton = document.querySelector("button#add"),
     popButton = document.querySelector("button#pop")
 const sizeNode = document.querySelector("#size")
+
+let animDur = 1000 - speedSlider.valueAsNumber * 100
 
 // 노드들을 연결하는 선을 그리기 위한 캔버스
 const lineCanvas = document.querySelector("#nodes canvas")
@@ -42,25 +45,24 @@ class HeapNode {
                 { left: `${x1}px`, top: `${y1}px` },
                 { left: `${x2}px`, top: `${y2}px` },
             ],
-            { duration: 500, fill: "forwards" },
+            { duration: animDur, fill: "forwards" },
         )
         n2.element.animate(
             [
                 { left: `${x2}px`, top: `${y2}px` },
                 { left: `${x1}px`, top: `${y1}px` },
             ],
-            { duration: 500, fill: "forwards" },
+            { duration: animDur, fill: "forwards" },
         )
     }
 
     fadeOutRemove() {
-        this.element.animate(
-            [
-                { opacity: 1 },
-                { opacity: 0 },
-            ],
-            { duration: 500, fill: "forwards" },
-        ).addEventListener("finish", () => this.element.remove())
+        this.element
+            .animate([{ opacity: 1 }, { opacity: 0 }], {
+                duration: animDur,
+                fill: "forwards",
+            })
+            .addEventListener("finish", () => this.element.remove())
     }
 
     get coords() {
@@ -103,19 +105,20 @@ class Heap {
         const parent = () => Math.floor(curr / 2)
         while (curr > 1 && key > this.nodes[parent()].key) {
             if (parent() >= 1) {
-                const p = parent(),
-                    c = curr
+                const p = this.nodes[parent()],
+                    c = this.nodes[curr]
+                this.swap(curr, parent())
 
-                setTimeout(() => {
-                    HeapNode.animateSwap(this.nodes[c], this.nodes[p])
-                    this.swap(c, p)
-                }, ++swapCount * 800)
+                setTimeout(
+                    () => HeapNode.animateSwap(p, c),
+                    ++swapCount * (animDur + 50),
+                )
             }
 
             curr = parent()
         }
 
-        setTimeout(enableControls, swapCount * 800 + 500)
+        setTimeout(enableControls, (swapCount + 1) * (animDur + 50) + 10)
     }
 
     pop() {
@@ -137,22 +140,26 @@ class Heap {
                 maxChild = right
 
             if (this.nodes[maxChild].key > this.nodes[curr].key) {
-                const m = maxChild,
-                    c = curr
+                const m = this.nodes[maxChild],
+                    c = this.nodes[curr]
+                this.swap(curr, maxChild)
 
-                setTimeout(() => {
-                    HeapNode.animateSwap(this.nodes[c], this.nodes[m])
-                    this.swap(c, m)
-                }, ++swapCount * 800)
+                setTimeout(
+                    () => HeapNode.animateSwap(c, m),
+                    ++swapCount * (animDur + 50),
+                )
 
                 curr = maxChild
             } else break
         }
 
-        setTimeout(() => {
-            enableControls()
-            drawLines()
-        }, swapCount * 800 + 500)
+        setTimeout(
+            () => {
+                enableControls()
+                drawLines()
+            },
+            (swapCount + 1) * (animDur + 50) + 10,
+        )
     }
 
     updateCoords() {
@@ -200,10 +207,13 @@ function popKey() {
     if (heap.empty) return
 
     const { x, y } = heap.nodes[1].coords
-    heap.nodes[1].element.animate([
-        { left: `${x}px`, top: `${y}px` },
-        { left: `calc(50% - 1.5rem)`, top: `${BASE_Y}px`}
-    ], {duration: 500, fill: "forwards"})
+    heap.nodes[1].element.animate(
+        [
+            { left: `${x}px`, top: `${y}px` },
+            { left: `calc(50% - 1.5rem)`, top: `${BASE_Y}px` },
+        ],
+        { duration: animDur, fill: "forwards" },
+    )
 }
 
 function drawLines() {
@@ -220,12 +230,14 @@ function drawLines() {
     }
 }
 
+const controls = [keyInput, addButton, popButton, speedSlider]
+
 function disableControls() {
-    for (let i of [keyInput, addButton, popButton]) i.disabled = true
+    for (let i of controls) i.disabled = true
 }
 
 function enableControls() {
-    for (let i of [keyInput, addButton, popButton]) i.disabled = false
+    for (let i of controls) i.disabled = false
     keyInput.focus()
 }
 
@@ -246,3 +258,8 @@ window.addEventListener("resize", () => {
     heap.updateCoords()
     drawLines()
 })
+
+speedSlider.addEventListener(
+    "input",
+    (e) => (animDur = 1000 - e.target.valueAsNumber * 100),
+)
