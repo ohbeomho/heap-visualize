@@ -20,6 +20,7 @@ lineCanvas.height = window.innerHeight
 const MAX_NODES = 1024 // 2^10
 const BASE_Y = 50
 const FLOOR_HEIGHT = 100
+const HORIZONTAL_PADDING = 24
 
 let last = 0
 
@@ -36,32 +37,61 @@ class HeapNode {
         return sizeNode.getBoundingClientRect().width
     }
 
+    static getNodeLeft(idx, floor) {
+        const nodeSize = HeapNode.size
+        const width = nodesDiv.clientWidth || window.innerWidth
+        const treeDepth = Math.ceil(Math.log2(last + 1))
+        const bottomCount = Math.pow(2, treeDepth - 1)
+        const availableWidth = Math.max(
+            width - HORIZONTAL_PADDING * 2 - nodeSize,
+            nodeSize,
+        )
+        const bottomGap = availableWidth / bottomCount
+        const levelStart = Math.pow(2, floor - 1)
+        const positionInLevel = idx - levelStart
+        const levelGap = bottomGap * Math.pow(2, treeDepth - floor)
+        const centerX =
+            HORIZONTAL_PADDING +
+            nodeSize / 2 +
+            levelGap / 2 +
+            positionInLevel * levelGap
+
+        return centerX - nodeSize / 2
+    }
+
     static animateSwap(n1, n2) {
         const { x: x1, y: y1 } = n1.coords,
             { x: x2, y: y2 } = n2.coords
 
-        n1.element.animate(
-            [
-                { left: `${x1}px`, top: `${y1}px` },
-                { left: `${x2}px`, top: `${y2}px` },
-            ],
-            { duration: animDur, fill: "forwards" },
-        )
-        n2.element.animate(
-            [
-                { left: `${x2}px`, top: `${y2}px` },
-                { left: `${x1}px`, top: `${y1}px` },
-            ],
-            { duration: animDur, fill: "forwards" },
-        )
+        n1.element
+            .animate(
+                [
+                    { left: `${x1}px`, top: `${y1}px` },
+                    { left: `${x2}px`, top: `${y2}px` },
+                ],
+                animDur,
+            )
+            .addEventListener("finish", () => {
+                n1.element.style.left = `${x2}px`
+                n1.element.style.top = `${y2}px`
+            })
+        n2.element
+            .animate(
+                [
+                    { left: `${x2}px`, top: `${y2}px` },
+                    { left: `${x1}px`, top: `${y1}px` },
+                ],
+                animDur,
+            )
+            .addEventListener("finish", () => {
+                n2.element.style.left = `${x1}px`
+                n2.element.style.top = `${y1}px`
+            })
     }
 
     fadeOutRemove() {
         this.element
-            .animate([{ opacity: 1 }, { opacity: 0 }], {
-                duration: animDur,
-                fill: "forwards",
-            })
+            .animate([{ opacity: 1 }, { opacity: 0 }], animDur)
             .addEventListener("finish", () => this.element.remove())
     }
 
@@ -93,7 +123,7 @@ class Heap {
      * @param {number} key
      */
     insert(key) {
-        if (last === 1024) return
+        if (last === MAX_NODES) return
 
         addKey(key)
 
@@ -122,6 +152,8 @@ class Heap {
     }
 
     pop() {
+        if (this.empty) return
+
         popKey()
 
         let swapCount = 0
@@ -171,7 +203,8 @@ class Heap {
             this.nodes[i].element.style.top =
                 `${BASE_Y + (floor - 1) * FLOOR_HEIGHT}px`
             this.nodes[i].element.style.left =
-                `calc(50% + ${((i + 1 / 2 - Math.pow(2, floor - 1) - Math.pow(2, floor - 2)) * Math.pow(2, 10 - floor)) / 5}rem - 1.5rem)`
+                `${HeapNode.getNodeLeft(i, floor)}px`
+            console.log(HeapNode.getNodeLeft(i, floor), i, floor)
         }
 
         drawLines()
@@ -207,13 +240,18 @@ function popKey() {
     if (heap.empty) return
 
     const { x, y } = heap.nodes[1].coords
-    heap.nodes[1].element.animate(
-        [
-            { left: `${x}px`, top: `${y}px` },
-            { left: `calc(50% - 1.5rem)`, top: `${BASE_Y}px` },
-        ],
-        { duration: animDur, fill: "forwards" },
-    )
+    heap.nodes[1].element
+        .animate(
+            [
+                { left: `${x}px`, top: `${y}px` },
+                { left: `${HeapNode.getNodeLeft(1, 1)}px`, top: `${BASE_Y}px` },
+            ],
+            animDur,
+        )
+        .addEventListener("finish", () => {
+            heap.nodes[1].element.style.left = `${HeapNode.getNodeLeft(1, 1)}px`
+            heap.nodes[1].element.style.top = `${BASE_Y}px`
+        })
 }
 
 function drawLines() {
