@@ -89,12 +89,6 @@ class HeapNode {
             })
     }
 
-    fadeOutRemove() {
-        this.element
-            .animate([{ opacity: 1 }, { opacity: 0 }], animDur)
-            .addEventListener("finish", () => this.element.remove())
-    }
-
     get coords() {
         const { x, y } = this.element.getBoundingClientRect()
         return { x, y }
@@ -125,7 +119,10 @@ class Heap {
     insert(key) {
         if (last === MAX_NODES) return
 
-        addKey(key)
+        this.nodes.push(new HeapNode(key))
+        last++
+
+        this.updateCoords()
 
         let swapCount = 0
 
@@ -154,9 +151,24 @@ class Heap {
     pop() {
         if (this.empty) return
 
-        popKey()
+        this.nodes[1].element.animate([{ opacity: 1 }, { opacity: 0 }], {
+            duration: animDur,
+            fill: "forwards",
+        })
 
-        let swapCount = 0
+        if (last == 0) return
+
+        const n1 = this.nodes[1],
+            n2 = this.nodes[last]
+        setTimeout(() => HeapNode.animateSwap(n1, n2), animDur + 50)
+
+        const removeElement = n1.element
+
+        this.nodes[1] = this.nodes[last]
+        this.nodes.pop()
+        last--
+
+        let swapCount = 1
 
         disableControls()
 
@@ -189,6 +201,7 @@ class Heap {
             () => {
                 enableControls()
                 drawLines()
+                removeElement.remove()
             },
             (swapCount + 1) * (animDur + 50) + 10,
         )
@@ -204,7 +217,6 @@ class Heap {
                 `${BASE_Y + (floor - 1) * FLOOR_HEIGHT}px`
             this.nodes[i].element.style.left =
                 `${HeapNode.getNodeLeft(i, floor)}px`
-            console.log(HeapNode.getNodeLeft(i, floor), i, floor)
         }
 
         drawLines()
@@ -225,33 +237,11 @@ function addKey() {
     if (isNaN(key)) return
     keyInput.value = ""
 
-    heap.nodes.push(new HeapNode(key))
-    last++
-
-    heap.updateCoords()
+    heap.insert(key)
 }
 
 function popKey() {
-    heap.nodes[1].fadeOutRemove()
-    heap.nodes[1] = heap.nodes[last]
-    heap.nodes.pop()
-    last--
-
-    if (heap.empty) return
-
-    const { x, y } = heap.nodes[1].coords
-    heap.nodes[1].element
-        .animate(
-            [
-                { left: `${x}px`, top: `${y}px` },
-                { left: `${HeapNode.getNodeLeft(1, 1)}px`, top: `${BASE_Y}px` },
-            ],
-            animDur,
-        )
-        .addEventListener("finish", () => {
-            heap.nodes[1].element.style.left = `${HeapNode.getNodeLeft(1, 1)}px`
-            heap.nodes[1].element.style.top = `${BASE_Y}px`
-        })
+    heap.pop()
 }
 
 function drawLines() {
@@ -281,14 +271,14 @@ function enableControls() {
 
 const heap = new Heap()
 
-addButton.addEventListener("click", () => heap.insert(keyInput.valueAsNumber))
+addButton.addEventListener("click", addKey)
 keyInput.addEventListener("keydown", (e) => {
     if (e.repeat || e.key != "Enter") return
 
-    heap.insert(keyInput.valueAsNumber)
+    addKey()
 })
 
-popButton.addEventListener("click", () => heap.pop())
+popButton.addEventListener("click", popKey)
 
 window.addEventListener("resize", () => {
     lineCanvas.width = window.innerWidth
